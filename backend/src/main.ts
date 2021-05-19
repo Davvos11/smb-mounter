@@ -3,20 +3,22 @@ import app from "./express";
 import {Database} from "./database";
 import path from "path";
 import {parseUrl} from "./urlParser";
+import {tryMount} from "./mount";
 
 const PORT = 8000;
+export const MOUNT_PATH = "/mnt/test";
 
 const db = new Database();
 
 app.post('/mounts', (req, res) =>{
-    let url : string = req.body.url;
-    const folder = path.parse(req.body.path as string);
+    const url : string = req.body.url;
+    const folder : string = req.body.path;
 
-    url = parseUrl(url);
-
-    console.log(url)
-
-    res.status(200).send();
+    tryMount(url, `${MOUNT_PATH}/${folder}`).then((result) => {
+        return res.status(200).send();
+    }).catch(reason => {
+        return res.status(500).send(reason);
+    })
 })
 
 app.listen(PORT, () => {
