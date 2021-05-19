@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import app from "./express";
 import {Database} from "./database";
-import {tryMount} from "./mount";
+import {tryMount, unmount} from "./mount";
 import {MOUNT_PATH} from "./constants";
 
 const PORT = 8000;
@@ -16,9 +16,16 @@ app.post('/mounts', async (req, res) =>{
     // Try to mount
     try {
         const parsedUrl = await tryMount(url, folder);
-        // Save in the database
-        await db.addMount(parsedUrl, folder);
-        return res.status(204).send();
+
+        try {
+            // Save in the database
+            await db.addMount(parsedUrl, folder);
+            return res.status(204).send();
+        } catch (e) {
+            // On a database error, revert the mount
+            await unmount(folder);
+            return res.status(500).send(e.message);
+        }
     } catch (e) {
         return res.status(500).send(e.message);
     }
@@ -29,7 +36,23 @@ app.get('/mounts', async (req, res) => {
     return res.status(200).send(mounts)
 })
 
+app.delete('/mounts', async (req, res) => {
+    const id : number = req.body.id;
+    // Get mount information from the database
+    const mount = await db.getMount(id);
+    if (mount === undefined)
+        return res.status(400).send("That mount does not exist");
 
+    // Try to unmount
+    try {
+        await unmount(mount.mountPoint);
+        // Remove from the database
+        await db.removeMount(id);
+        return res.status(204).send();
+    } catch (e) {
+        return res.status(500).send(e.message);
+    }
+})
 
 app.listen(PORT, () => {
     console.log(`Listening at http://localhost:${PORT}`)

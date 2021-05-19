@@ -7,6 +7,6 @@ export class Mount {
     id!: number;
     @Column()
     url!: string;
-    @Column()
+    @Column({unique: true})
     mountPoint!: string;
 }

@@ -32,13 +32,25 @@ export async function tryMount(url: string, mountPath: string, attempt = 0){
 
 async function mount(url: string, mountPath: string) {
     const args = ["-t", "cifs", "-o", "username=anonymous,password=", url, mountPath]
+    return execute("mount", args, true);
+}
+
+export async function unmount(mountPath: string) {
+    // Try to unmount
+    const promise = execute("umount", [mountPath], true);
+    await promise;
+    // Remove the folder
+    return Promise.all([promise, removeMountPoint(mountPath)]);
+}
+
+async function execute(file: string, args: string[], asRoot = false) {
     let child: ChildProcess;
     // Check if sudo is needed and try to mount
-    if (isRoot()) {
+    if (!asRoot || isRoot()) {
         // Try to mount
-        child = execFile("mount", args);
+        child = execFile(file, args);
     } else {
-        child = execFile("sudo", ["mount", ...args]);
+        child = execFile("sudo", [file, ...args]);
     }
 
     // Route stdout and stderr
