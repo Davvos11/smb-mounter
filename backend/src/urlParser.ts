@@ -6,7 +6,7 @@ export function parseUrl(url: string, attempt = 0) {
         url = url.replace(/\/[^\/]+$/, '');
     }
 
-    if (attempt >= 1) {
+    if (attempt === 1) {
         // Add .student.utwente.nl so that it will route to campusnet
         url = url.replace(/\/\/([^\/]+)/, "//$1.student.utwente.nl");
     } else if (attempt >= 2) {

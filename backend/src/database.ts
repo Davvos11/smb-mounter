@@ -12,7 +12,7 @@ export class Database {
         return this.db
     }
 
-    async addMount(url: URL, mountPoint: ParsedPath) {
+    async addMount(url: string, mountPoint: string) {
         const mount = new Mount();
         mount.url = url;
         mount.mountPoint = mountPoint;

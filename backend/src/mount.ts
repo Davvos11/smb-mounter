@@ -2,7 +2,7 @@ import {ChildProcess, execFile} from "child_process";
 import {parseUrl} from "./urlParser";
 import fs from "fs";
 import path from "path";
-import {MOUNT_PATH} from "./main";
+import {MOUNT_PATH} from "./constants";
 
 /**
  * @throws ResolveError
@@ -14,9 +14,9 @@ export async function tryMount(url: string, mountPath: string, attempt = 0){
     // Create a folder at the mount point
     await createMountPoint(mountPath);
 
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
         mount(url, mountPath).then(() => {
-            resolve();
+            resolve(url);
         }).catch(async (reason: string) => {
             // Remove the created folder
             await removeMountPoint(mountPath);
@@ -24,7 +24,7 @@ export async function tryMount(url: string, mountPath: string, attempt = 0){
             if (reason.includes("could not resolve address")) {
                 tryMount(url, mountPath, attempt + 1).then(resolve).catch(reject)
             } else {
-                reject(reason)
+                reject(new MountError(reason))
             }
         })
     })
@@ -67,6 +67,9 @@ function isRoot() {
 }
 
 async function createMountPoint(location: string) {
+    if (path.relative(MOUNT_PATH, location).includes('..')) {
+        throw new PermissionError("Writing to this directory is not allowed")
+    }
     if (!fs.existsSync(location)) {
         console.log(`Creating ${location}`)
         return  fs.promises.mkdir(location, {recursive: true})
@@ -74,6 +77,9 @@ async function createMountPoint(location: string) {
 }
 
 async function removeMountPoint(location: string) {
+    if (path.relative(MOUNT_PATH, location).includes('..')) {
+        throw new PermissionError("Writing to this directory is not allowed")
+    }
     if (fs.existsSync(location)) {
         await removeEmptyDirectories(location)
     }
@@ -100,4 +106,18 @@ async function removeEmptyDirectories(directory: string) {
     const parent = path.dirname(directory)
     if (!path.relative(MOUNT_PATH, parent).includes('..') && parent !== MOUNT_PATH)
         await removeEmptyDirectories(path.dirname(directory))
+}
+
+export class PermissionError extends Error {
+    constructor(message?: string) {
+        super(message);
+        this.name = "PermissionError";
+    }
+}
+
+export class MountError extends Error {
+    constructor(message?: string) {
+        super(message);
+        this.name = "MountError";
+    }
 }

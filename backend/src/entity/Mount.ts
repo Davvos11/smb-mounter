@@ -1,10 +1,12 @@
-import {Column, Entity, PrimaryColumn} from "typeorm";
+import {Column, Entity, PrimaryColumn, PrimaryGeneratedColumn} from "typeorm";
 import {ParsedPath} from "path";
 
 @Entity()
 export class Mount {
+    @PrimaryGeneratedColumn()
+    id!: number;
     @Column()
-    url!: URL;
-    @PrimaryColumn()
-    mountPoint!: ParsedPath;
+    url!: string;
+    @Column()
+    mountPoint!: string;
 }
