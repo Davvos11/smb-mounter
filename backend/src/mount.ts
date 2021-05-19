@@ -43,6 +43,15 @@ export async function unmount(mountPath: string) {
     return Promise.all([promise, removeMountPoint(mountPath)]);
 }
 
+export async function isMounted(mountPath: string) {
+    try {
+        await execute("grep", ["-qs", mountPath+" ", "/proc/mounts"])
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
 async function execute(file: string, args: string[], asRoot = false) {
     let child: ChildProcess;
     // Check if sudo is needed and try to mount
@@ -54,7 +63,11 @@ async function execute(file: string, args: string[], asRoot = false) {
     }
 
     // Route stdout and stderr
-    child.stdout?.on('data', data => console.log(data));
+    let stdout = "";
+    child.stdout?.on('data', data => {
+        stdout += data;
+        console.log(data)
+    });
 
     let stderr = "";
     child.stderr?.on('data', data => {
@@ -63,11 +76,11 @@ async function execute(file: string, args: string[], asRoot = false) {
     })
 
     // Return a promise
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
         child.addListener("error", reject)
         child.addListener("exit", exitCode => {
             if (exitCode === 0)
-                resolve()
+                resolve(stdout)
             else
                 reject(stderr)
         })

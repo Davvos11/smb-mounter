@@ -9,4 +9,6 @@ export class Mount {
     url!: string;
     @Column({unique: true})
     mountPoint!: string;
+    @Column({default: false})
+    failed!: boolean;
 }

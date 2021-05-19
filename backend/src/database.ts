@@ -5,14 +5,14 @@ import {ParsedPath} from "path";
 export class Database {
     private db: Connection | undefined;
 
-    async getDb() {
+    private async getDb() {
         if (this.db === undefined) {
             this.db = await createConnection();
         }
         return this.db
     }
 
-    async getRepo() {
+    private async getRepo() {
         return (await this.getDb()).getRepository(Mount);
     }
 
@@ -40,6 +40,16 @@ export class Database {
         const mountRepository = await this.getRepo();
         const mount = await mountRepository.findOne(id)
         if (mount !== undefined)
-            return mountRepository.remove(mount)
+            await mountRepository.remove(mount)
+    }
+
+    async updateMount(mount: Mount) {
+        const mountRepository = await this.getRepo();
+        await mountRepository.save(mount);
+    }
+
+    async updateMounts(mounts: Mount[]) {
+        const mountRepository = await this.getRepo();
+        await mountRepository.save(mounts);
     }
 }

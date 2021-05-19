@@ -1,13 +1,30 @@
 import "reflect-metadata";
 import app from "./express";
 import {Database} from "./database";
-import {tryMount, unmount} from "./mount";
+import {isMounted, tryMount, unmount} from "./mount";
 import {MOUNT_PATH} from "./constants";
 
 const PORT = 8000;
 
-
 const db = new Database();
+
+// (try to) mount all mount points from the database
+(async () => {
+    const mounts = await db.getMounts();
+    for (const mount of mounts) {
+        if (await isMounted(mount.url)) {
+            continue;
+        }
+        try {
+            await tryMount(mount.url, mount.mountPoint)
+            mount.failed = false;
+        } catch (e) {
+            console.log("Failed to mount "+mount.url);
+            mount.failed = true;
+        }
+    }
+    await db.updateMounts(mounts);
+})()
 
 app.post('/mounts', async (req, res) =>{
     const url : string = req.body.url;
